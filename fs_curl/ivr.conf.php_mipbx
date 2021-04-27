@@ -1,0 +1,190 @@
+<?php
+/**
+ * @package  FS_CURL
+ * @subpackage FS_CURL_Configuration
+ * ivr.conf.php
+ */
+/**
+ * @package  FS_CURL
+ * @subpackage FS_CURL_Configuration
+ * @license
+ * @author Raymond Chandler (intralanman) <intralanman@gmail.com>
+ * @version 0.1
+ * Write XML for ivr.conf
+*/
+class ivr_conf extends fs_configuration {
+    public function ivr_conf() {
+        $this -> fs_configuration();
+    }
+
+    /**
+     * This method will run all of the methods necessary to return
+     * the XML for the ivr.conf
+     * @return void
+    */
+    public function main() {
+        $ivrs = $this -> get_ivr_array();
+        $this -> write_config($ivrs);
+    }
+
+    /**
+     * This method will fetch all of the ivr menus from the database
+     * using the MDB2 pear class
+     * @return array
+    */
+    private function get_ivr_array() {
+        $query = "SELECT * FROM ivr_master";
+        $menus = $this -> db -> queryAll($query);
+        return $menus;
+    }
+
+    /**
+     * This method will write all of the entry elements with
+     * their corresponding attributes
+     * @return void
+     */
+	private function write_entries($ivr_id,$language,$cmp_id) {
+		$query = sprintf(
+			"SELECT * FROM ivr_detail WHERE ivr_id=$ivr_id AND ivr_action != 'no-action' ORDER BY ivr_digit"
+		);
+		$entries_array = $this -> db -> queryAll($query);
+		if (FS_PDO::isError($entries_array)) {
+			$this -> comment($query);
+			$this -> comment($this -> db -> getMessage());
+			return ;
+		}
+		$entries_count = count($entries_array);
+		if ($entries_count < 1) {
+			return ;
+		}
+
+		for ($i=0; $i<$entries_count; $i++) {
+			//$this -> comment_array($entries_array[$i]);
+			if($entries_array[$i]['ivr_action'] == "menu-play-sound") {
+				if (!empty($entries_array[$i]['ivr_param'])) {
+// 				Change applied by sagar to get file path directly from ivr param and not from playback
+// 					$query_playback = sprintf(
+// 						"SELECT a.cmp_id,b.prompt_name FROM playback_master a, prompt_master b WHERE a.play_id='".$entries_array[$i]['ivr_param']."' AND a.play_file = b.prompt_id"
+// 					);
+// 					$playback_array = $this -> db -> queryAll($query_playback);
+// 					if (FS_PDO::isError($playback_array)) {
+// 						$this -> comment($query_playback);
+// 						$this -> comment($this -> db -> getMessage());
+// 						continue ;
+// 					}
+// 					$playback_count = count($playback_array);
+// 					if ($playback_count < 1) {
+// 						continue ;
+// 					}
+					$this -> xmlw -> startElement('entry');
+					$this -> xmlw -> writeAttribute('action', $entries_array[$i]['ivr_action']);
+					$this -> xmlw -> writeAttribute('digits', $entries_array[$i]['ivr_digit']);
+// 					$filepath = "custom/".$playback_array[0]['cmp_id']."/".$language."/".$playback_array[0]['prompt_name'].".wav";
+					$this -> xmlw -> writeAttribute('param', $entries_array[$i]['ivr_param']);
+					$this -> xmlw -> endElement();//</param>
+				}
+			} else if ($entries_array[$i]['ivr_action'] == "menu-sub" || $entries_array[$i]['ivr_action'] == "menu-ivr") {
+				if (!empty($entries_array[$i]['ivr_param'])) {
+					$query_submenu = sprintf(
+						"SELECT a.ivr_id FROM ivr_master a WHERE a.ivr_name='".$entries_array[$i]['ivr_param']."' AND a.cmp_id = '".$cmp_id."'"
+					);
+					$submenu_array = $this -> db -> queryAll($query_submenu);
+					if (FS_PDO::isError($submenu_array)) {
+						$this -> comment($query_submenu);
+						$this -> comment($this -> db -> getMessage());
+						continue ;
+					}
+					$submenu_count = count($submenu_array);
+					if ($submenu_count < 1) {
+						continue ;
+					}
+					
+					$this -> xmlw -> startElement('entry');
+					if($entries_array[$i]['ivr_action'] == "menu-ivr") {
+						$this -> xmlw -> writeAttribute('action', 'menu-sub');
+					} else {
+						$this -> xmlw -> writeAttribute('action', $entries_array[$i]['ivr_action']);
+					}
+					$this -> xmlw -> writeAttribute('digits', $entries_array[$i]['ivr_digit']);
+					$ivr_new_name=$submenu_array[0]['ivr_id']."_".$entries_array[$i]['ivr_param'];
+					$this -> xmlw -> writeAttribute('param', $ivr_new_name);
+					$this -> xmlw -> endElement();//</param>
+				}
+			} else if ($entries_array[$i]['ivr_action'] == "menu-exec-ringgroup") {
+				$this -> xmlw -> startElement('entry');
+				if($entries_array[$i]['ivr_action'] == "menu-exec-ringgroup") {
+					$this -> xmlw -> writeAttribute('action', 'menu-exec-app');
+				} else {
+					$this -> xmlw -> writeAttribute('action', $entries_array[$i]['ivr_action']);
+				}
+				$this -> xmlw -> writeAttribute('digits', $entries_array[$i]['ivr_digit']);
+				if (!empty($entries_array[$i]['ivr_param'])) {
+					$this -> xmlw -> writeAttribute('param', $entries_array[$i]['ivr_param']);
+				}
+				$this -> xmlw -> endElement();//</param>
+			} else {
+				$this -> xmlw -> startElement('entry');
+				if($entries_array[$i]['ivr_action'] == "menu-exec-queue") {
+					$this -> xmlw -> writeAttribute('action', 'menu-exec-app');
+				} elseif($entries_array[$i]['ivr_action'] == "menu-exec-opt") {
+					$this -> xmlw -> writeAttribute('action', 'menu-exec-app');
+				} else {
+					$this -> xmlw -> writeAttribute('action', $entries_array[$i]['ivr_action']);
+				}
+
+				$this -> xmlw -> writeAttribute('digits', $entries_array[$i]['ivr_digit']);
+				if (!empty($entries_array[$i]['ivr_param'])) {
+					$this -> xmlw -> writeAttribute('param', $entries_array[$i]['ivr_param']);
+				}
+				$this -> xmlw -> endElement();//</param>
+			}
+		}
+	}
+
+    /**
+     * This method will evaluate the data from the db and
+     * write attributes that need written
+     * @return void
+    */
+    private function write_menu_attributes($menu_data) {
+        $this -> xmlw -> writeAttribute('name', $menu_data['ivr_id']."_".$menu_data['ivr_name']);
+        $this -> xmlw -> writeAttribute('greet-long', $menu_data['ivr_greet_long']);
+        if(!empty($menu_data['ivr_greet_short'])) {
+		$this -> xmlw -> writeAttribute('greet-short', $menu_data['ivr_greet_short']);
+	}
+	if(!empty($menu_data['ivr_invalid_sound'])) {
+		$this -> xmlw -> writeAttribute('invalid-sound', $menu_data['ivr_invalid_sound']);
+	}
+	if(!empty($menu_data['ivr_exit_sound'])) {
+		$this -> xmlw -> writeAttribute('exit-sound', $menu_data['ivr_exit_sound']);
+	}
+        $this -> xmlw -> writeAttribute('timeout', $menu_data['ivr_timeout']);
+        $this -> xmlw -> writeAttribute('max-timeouts', $menu_data['ivr_max_timeout']);
+        $this -> xmlw -> writeAttribute('digit-len', $menu_data['ivr_digit_len']);
+        //$this -> xmlw -> writeAttribute('', $menu_data['']);
+    }
+
+    /**
+     * This method will do the writing of the "menu" elements
+     * and call the write_entries method to do the writing of
+     * individual menu's "entry" elements
+     * @return void
+    */
+    private function write_config($menus) {
+        $menu_count = count($menus);
+        $this -> xmlw -> setIndent(true);
+        $this -> xmlw -> startElement('configuration');
+        $this -> xmlw -> writeAttribute('name', basename(__FILE__, '.php'));
+        $this -> xmlw -> writeAttribute('description', 'Sofia SIP Endpoint');
+        $this -> xmlw -> startElement('menus');
+        for ($i=0; $i<$menu_count; $i++) {
+            $this -> xmlw -> startElement('menu');
+            $this -> write_menu_attributes($menus[$i]);
+            $this -> write_entries($menus[$i]['ivr_id'],$menus[$i]['ivr_language'],$menus[$i]['cmp_id']);
+            $this -> xmlw -> endElement();
+        }
+        $this -> xmlw -> endElement();
+        $this -> xmlw -> endElement();
+    }
+}
+?>
