@@ -1,0 +1,8 @@
+include $(top_srcdir)/build/modmake.rulesam
+MODNAME=mod_google_asr
+mod_LTLIBRARIES = mod_google_asr.la
+mod_google_asr_la_SOURCES  = google_asr.cpp mod_google_asr.c
+mod_google_asr_la_CFLAGS   = $(AM_CFLAGS)
+mod_google_asr_la_CXXFLAGS = -I $(top_srcdir)/libs/googleapis/gens $(AM_CXXFLAGS) -std=c++11
+mod_google_asr_la_LIBADD   = $(switch_builddir)/libfreeswitch.la
+mod_google_asr_la_LDFLAGS  = -avoid-version -module -no-undefined -shared `pkg-config --libs grpc++ grpc`

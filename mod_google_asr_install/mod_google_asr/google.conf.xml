@@ -1,0 +1,9 @@
+<configuration name="google.conf" description="GOOGLE SPEECH-TO-TEXT CONFIGURATION">
+        <settings>
+		<param name="google_application_crdentials" value="/usr/src/google_transcribe.json"/>
+		<param name="google_default_language" value="en-US"/>
+		<param name="google_default_interim_parameter" value="1"/>
+                 <param name="log-level" value="DEBUG"/>
+        </settings>
+</configuration>
+

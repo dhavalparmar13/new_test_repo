@@ -1,0 +1,27 @@
+   <extension name="mod_google_asr_GOOGLE_SPEECH_USE_ENHANCED">
+      <condition field="destination_number" expression="^1992$">
+         <action application="answer" />
+         <action application="set" data="GOOGLE_SPEECH_MODEL=phone_call" />
+         <action application="set" data="GOOGLE_SPEECH_MAX_ALTERNATIVES=2" />
+         <action application="GOOGLE_ASR" />
+         <action application="play_and_detect_speech" data="/usr/src/freeswitch/src/mod/applications/mod_test/test/sounds/ivr-please_state_your_name_and_reason_for_calling.wav detect:google_asr {start-input-timers=false}" />
+         <action application="log" data="CRIT ${detect_speech_result}" />
+      </condition>
+   </extension>
+   <extension name="mod_google_asr_GOOGLE_SPEECH_USE_ENHANCED">
+      <condition field="destination_number" expression="^1991$">
+         <action application="answer" />
+         <action application="set" data="GOOGLE_SPEECH_USE_ENHANCED=true" />
+         <action application="GOOGLE_ASR" />
+         <action application="play_and_detect_speech" data="/usr/src/freeswitch/src/mod/applications/mod_test/test/sounds/ivr-please_state_your_name_and_reason_for_calling.wav detect:google_asr {start-input-timers=false}" />
+         <action application="log" data="CRIT ${detect_speech_result}" />
+      </condition>
+   </extension>
+   <extension name="mod_google_asr_CHECK">
+      <condition field="destination_number" expression="^1998$">
+         <action application="answer" />
+         <action application="GOOGLE_ASR" />
+         <action application="play_and_detect_speech" data="/usr/src/freeswitch/src/mod/applications/mod_test/test/sounds/ivr-please_state_your_name_and_reason_for_calling.wav detect:google_asr {start-input-timers=false}" />
+         <action application="log" data="CRIT ${detect_speech_result}" />
+      </condition>
+   </extension>
